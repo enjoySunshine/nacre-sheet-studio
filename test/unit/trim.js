@@ -205,6 +205,87 @@ suite('Trim borders', () => {
     t.assert.strictEqual(info.trimOffsetTop, -552);
   });
 
+  suite('Combined with pre-resize extract', () => {
+    const width = 48;
+    const height = 40;
+    const body = {
+      left: 10,
+      top: 8,
+      width: 20,
+      height: 20
+    };
+    const red = [210, 30, 40, 255];
+    const input = Buffer.alloc(width * height * 4);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const inBody = x >= body.left && x < body.left + body.width &&
+          y >= body.top && y < body.top + body.height;
+        if (inBody) {
+          input.set(red, (y * width + x) * 4);
+        }
+      }
+    }
+
+    const pixelAt = (data, info, x, y) => {
+      const offset = (y * info.width + x) * 4;
+      return Array.from(data.subarray(offset, offset + 4));
+    };
+    const assertCornersAreBody = (t, data, info) => {
+      t.assert.deepStrictEqual(pixelAt(data, info, 0, 0), red);
+      t.assert.deepStrictEqual(pixelAt(data, info, info.width - 1, info.height - 1), red);
+      t.assert.deepStrictEqual(pixelAt(data, info, info.width >> 1, info.height >> 1), red);
+    };
+
+    test('Extract then trim only considers pixels within the extract', async (t) => {
+      t.plan(7);
+      const { data, info } = await sharp(input, {
+        raw: { width, height, channels: 4 }
+      })
+        .extract({ left: 6, top: 4, width: 28, height: 28 })
+        .trim({ threshold: 0 })
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+
+      t.assert.strictEqual(info.width, 20);
+      t.assert.strictEqual(info.height, 20);
+      t.assert.strictEqual(info.trimOffsetLeft, -4);
+      t.assert.strictEqual(info.trimOffsetTop, -4);
+      assertCornersAreBody(t, data, info);
+    });
+
+    test('Extract then trim uses the default threshold', async (t) => {
+      t.plan(4);
+      const { info } = await sharp(input, {
+        raw: { width, height, channels: 4 }
+      })
+        .extract({ left: 6, top: 4, width: 28, height: 28 })
+        .trim()
+        .toBuffer({ resolveWithObject: true });
+
+      t.assert.strictEqual(info.width, 20);
+      t.assert.strictEqual(info.height, 20);
+      t.assert.strictEqual(info.trimOffsetLeft, -4);
+      t.assert.strictEqual(info.trimOffsetTop, -4);
+    });
+
+    test('Trim then extract retains the trim offsets', async (t) => {
+      t.plan(7);
+      const { data, info } = await sharp(input, {
+        raw: { width, height, channels: 4 }
+      })
+        .trim({ threshold: 0 })
+        .extract({ left: 2, top: 2, width: 12, height: 12 })
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+
+      t.assert.strictEqual(info.width, 12);
+      t.assert.strictEqual(info.height, 12);
+      t.assert.strictEqual(info.trimOffsetLeft, -10);
+      t.assert.strictEqual(info.trimOffsetTop, -8);
+      assertCornersAreBody(t, data, info);
+    });
+  });
+
   suite('Invalid parameters', () => {
     Object.entries({
       'Invalid string': 'fail',

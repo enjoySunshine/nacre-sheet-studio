@@ -172,8 +172,8 @@ class PipelineWorker : public Napi::AsyncWorker {
         }
       }
 
-      // Trim
-      if (baton->trimThreshold >= 0.0) {
+      // Trim, before any pre-resize extraction (the default order)
+      if (baton->trimThreshold >= 0.0 && !baton->trimAfterExtract) {
         MultiPageUnsupported(nPages, "Trim");
         KeepGainMapUnsupported(baton->keepGainMap, "Trim");
         image = sharp::StaySequential(image);
@@ -188,6 +188,16 @@ class PipelineWorker : public Napi::AsyncWorker {
           ? sharp::CropMultiPage(image,
               baton->leftOffsetPre, baton->topOffsetPre, baton->widthPre, baton->heightPre, nPages, &pageHeight)
           : image.extract_area(baton->leftOffsetPre, baton->topOffsetPre, baton->widthPre, baton->heightPre);
+      }
+
+      // Trim, after the pre-resize extraction when extract was requested first
+      if (baton->trimThreshold >= 0.0 && baton->trimAfterExtract) {
+        MultiPageUnsupported(nPages, "Trim");
+        KeepGainMapUnsupported(baton->keepGainMap, "Trim");
+        image = sharp::StaySequential(image);
+        image = sharp::Trim(image, baton->trimBackground, baton->trimThreshold, baton->trimLineArt, baton->trimMargin);
+        baton->trimOffsetLeft = image.xoffset();
+        baton->trimOffsetTop = image.yoffset();
       }
 
       // Get pre-resize image width and height
@@ -1848,6 +1858,7 @@ Napi::Value pipeline(const Napi::CallbackInfo& info) {
   baton->trimBackground = sharp::AttrAsVectorOfDouble(options, "trimBackground");
   baton->trimThreshold = sharp::AttrAsDouble(options, "trimThreshold");
   baton->trimLineArt = sharp::AttrAsBool(options, "trimLineArt");
+  baton->trimAfterExtract = sharp::AttrAsBool(options, "trimAfterExtract");
   baton->trimMargin = sharp::AttrAsUint32(options, "trimMargin");
   baton->gamma = sharp::AttrAsDouble(options, "gamma");
   baton->gammaOut = sharp::AttrAsDouble(options, "gammaOut");

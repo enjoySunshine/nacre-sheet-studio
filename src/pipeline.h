@@ -101,6 +101,7 @@ struct PipelineBaton {
   std::vector<double> trimBackground;
   double trimThreshold;
   bool trimLineArt;
+  bool trimAfterExtract;
   int trimOffsetLeft;
   int trimOffsetTop;
   int trimMargin;
@@ -288,6 +289,7 @@ struct PipelineBaton {
     trimBackground{},
     trimThreshold(-1.0),
     trimLineArt(false),
+    trimAfterExtract(false),
     trimOffsetLeft(0),
     trimOffsetTop(0),
     trimMargin(0),
