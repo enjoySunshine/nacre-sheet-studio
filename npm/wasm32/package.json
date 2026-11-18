@@ -1,0 +1,31 @@
+{
+  "name": "@img/sharp-wasm32",
+  "version": "0.35.5",
+  "description": "Prebuilt sharp for use with WebAssembly",
+  "author": "Lovell Fuller <npm@lovell.info>",
+  "license": "Apache-2.0 AND LGPL-3.0-or-later AND MIT",
+  "funding": {
+    "url": "https://opencollective.com/libvips"
+  },
+  "preferUnplugged": true,
+  "files": [
+    "index.cjs",
+    "lib",
+    "versions.json"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "commonjs",
+  "exports": {
+    "./sharp.node": "./index.cjs",
+    "./package": "./package.json",
+    "./versions": "./versions.json"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "dependencies": {
+    "@emnapi/runtime": "^1.11.3"
+  }
+}
